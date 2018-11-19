@@ -3,99 +3,21 @@ import os.path
 import urllib.request
 import random
 from collections import defaultdict
-import re
 import argparse
+from LifePathLibs import CharacterSheet
+from LifePathLibs import LifePathTables, MinValDict
 
 # Needs 3 formatted int values: number to generate, min value, max value. 13, 1, 20 for 13d20
 rand_api_path = "https://www.random.org/integers/?num=%d&min=%d&max=%d&col=1&base=10&format=plain&rnd=new"
 attribute_names = ['Agility', 'Awareness', 'Brawn', 'Coordination', 'Intelligence', 'Personality', 'Willpower']
 
 
-class LifePathTables:
-    def __init__(self):
-        # 13d20 in total including finishing touches
-        # Step 1: Homeland
-        self.homelands = MinValDict()  # 2d20
-        self.homelands_talents = CaseSpaceInsensitiveDict()
-        # Step 2: Attributes
-        self.attributes = MinValDict()  # 1d20
-        # Step 3: Caste
-        self.castes = MinValDict()  # 1d20
-        self.castes_descriptions = CaseSpaceInsensitiveDict()
-        self.castes_talents = CaseSpaceInsensitiveDict()
-        # Step 4: Caste Story
-        self.caste_stories = CaseSpaceInsensitiveDict()  # Contains nested MinValDict with stories per cast - 1d20
-        self.caste_stories_descriptions = CaseSpaceInsensitiveDict()  # Nested CaseSpace dict with descs per cast
-        # Step 5: Archetype
-        self.archetypes = MinValDict()  # 1d20
-        self.archetypes_descriptions = CaseSpaceInsensitiveDict()  # Contains descriptions and nested dict of values
-        # Step 6: Nature
-        self.natures = MinValDict()  # 1d20
-        self.natures_descriptions = CaseSpaceInsensitiveDict()  # Contains descriptions and nested dict of values
-        # Step 7: Education
-        self.educations = MinValDict()  # 1d20
-        self.educations_descriptions = CaseSpaceInsensitiveDict()
-        # Step 8: War Story
-        self.war_stories = MinValDict()  # 1d20
-        # Step 9: Finishing Touches
-        self.belongings = MinValDict()  # 1d20
-        self.garments = MinValDict()  # 1d20
-        self.weapons = MinValDict()  # 1d20
-        self.provenance = MinValDict()  # 1d20
-
-
-class CaseSpaceInsensitiveDict(dict):
-    clean = re.compile('[^a-z]')
-
-    def __getitem__(self, k: str):
-        return super(CaseSpaceInsensitiveDict, self).__getitem__(re.sub(self.clean, '', k.lower()))
-
-    @staticmethod
-    def rand_val():
-        return False
-
-    def get(self, k: str):
-        return super(CaseSpaceInsensitiveDict, self).get(re.sub(self.clean, '', k.lower()))
-        
-    def __setitem__(self, key: str, value):
-        if isinstance(value, str):
-            value = value.strip()
-        super(CaseSpaceInsensitiveDict, self).__setitem__(re.sub(self.clean, '', key.lower()), value)
-
-
-class MinValDict(dict):
-    def __getitem__(self, item):
-        out = self.get(item)
-        if not out:
-            raise ValueError
-        return out
-
-    @staticmethod
-    def rand_val():
-        return True
-
-    def get(self, k):
-        if not isinstance(k, int):
-            k = int(k)
-        out = None
-        while not out and k <= max(self.keys()):
-            out = super(MinValDict, self).get(k)
-            k += 1
-        return out
-
-    def __setitem__(self, key, value):
-        if not isinstance(key, int):
-            key = int(key)
-        if isinstance(value, str):
-            value = value.strip()
-        super(MinValDict, self).__setitem__(key, value)
-
-
 class CharacterMaker:
-    def __init__(self, table_store: LifePathTables, true_random=False, full_auto=False):
+    def __init__(self, table_store: LifePathTables, true_random=False, full_auto=False, verbose=False):
         self.table_store = table_store
         self.true_random = true_random
         self.full_auto = full_auto
+        self.verbose = verbose
 
         self.homeland = ''
         self.caste = ''
@@ -128,8 +50,43 @@ class CharacterMaker:
         self.languages = []
         self.standing = 0
 
+        self.name = ''
+        self.vigor = 0
+        self.resolve = 0
+        self.gold = 0
+        self.gender = ''
+        self.height = ''
+        self.bonus_melee = 0
+        self.bonus_ranged = 0
+        self.bonus_presence = 0
+        self.age = 0
+
+        self.__generate_steps_rand()
+
+    def calc_bonus_damage(self):
+        d_vals = MinValDict()
+        d_vals.update({8: 0, 9: 1, 11: 2, 13: 3, 15: 5, 25: 6})
+        self.bonus_melee = d_vals[self.attributes['Brawn']]
+        self.bonus_ranged = d_vals[self.attributes['Awareness']]
+        self.bonus_presence = d_vals[self.attributes['Personality']]
+
+    @staticmethod
+    def rand_foot(rand_val: int):
+        if rand_val < 2:
+            return 4
+        elif rand_val < 13:
+            return 5
+        elif rand_val < 20:
+            return 6
+        else:
+            return 7
+
     def select_print(self, msg):
         if not self.full_auto:
+            print(msg)
+
+    def auto_print(self, msg):
+        if self.verbose:
             print(msg)
 
     @staticmethod
@@ -143,19 +100,25 @@ class CharacterMaker:
         return "an %s" % text if text[0].lower() in ('a', 'e', 'i', 'o', 'u') else "a %s" % text
 
     def select_from_choices(self, prompt, choices: list):
+        if not isinstance(choices, list):
+            choices = list(choices)
         if self.full_auto:
             auto_choice = choices[arbitrary_random(0, len(choices)-1)]
-            print("Automatically selecting %s from choices: %s" % (auto_choice, ', '.join(choices)))
+            self.auto_print("Automatically selecting %s from choices: %s" % (auto_choice, ', '.join(choices)))
             return auto_choice
         else:
-            selected = input(prompt)
-            while selected not in choices:
+            nums = [str(n +1) for n in range(len(choices))]
+            vals = {n: choice for n, choice in zip(nums, choices)}
+            select_vals = ['[%s]: %s' % (n, choice) for n, choice in vals.items()]
+            input_prompt = '%s\n%s\nYour choice: ' % (prompt, '\n'.join(select_vals))
+            selected = input(input_prompt)
+            while selected not in choices + nums:
                 print('Selected value: "%s" not valid, choose a value from the following:\n%s.' %
                       (selected, ', '.join(choices)))
-                selected = input(prompt)
-            return selected
+                selected = input(input_prompt)
+            return selected if selected in choices else vals[selected]
 
-    def generate_steps_rand(self):
+    def __generate_steps_rand(self):
         rand_vals = roll_dice('14d20', true_random=self.true_random)
 
         self.step1_homeland(rand_vals.pop() + rand_vals.pop())
@@ -167,14 +130,15 @@ class CharacterMaker:
         self.step7_education(rand_vals.pop())
         self.step8_war_story(rand_vals.pop())
         self.step9_finishing_touches(rand_vals)
+        self.step10_calcs_and_naming()
 
     def add_skill(self, skill: str, exp: int, foc: int):
         if 'character’s career skill' in skill:
-            print("Boosting career skill %s" % self.career_skill)
+            self.auto_print("Boosting career skill %s" % self.career_skill)
             self.skills[self.career_skill]['exp'] += exp
             self.skills[self.career_skill]['foc'] += foc
         elif "random career skill" in skill:
-            print("Adding random career skill from education")
+            self.auto_print("Adding random career skill from education")
             self.add_random_career_skill(roll_dice('1d20', self.true_random))
         else:
             self.skills[skill]['exp'] += exp
@@ -254,9 +218,7 @@ class CharacterMaker:
             self.attribute_aspects.append(aspect)
 
         same = len(aspects) == 1
-        if same:
-            aspect_txt = "your character is very %s" % self.attribute_aspects[0]
-        else:
+        if not same:
             aspect_txt = "your character is both %s" % ' and '.join(aspects)
             self.select_print('Because %s, your mandatory attributes are:\n%s' % (aspect_txt, ', '.join(mandatories)))
         best = self.select_from_choices('Select your "best" mandatory attribute (+3 to attribute):\n', mandatories)
@@ -275,7 +237,8 @@ class CharacterMaker:
         for other in mandatories:
             self.attributes[other] += 2
         for aspect, optional1, optional2 in optionals:
-            choice = self.select_from_choices("Select either %s or %s to get another +1:\n" % (optional1, optional2), (optional1, optional2))
+            choice = self.select_from_choices("Select either %s or %s to get another +1:\n" % (optional1, optional2),
+                                              (optional1, optional2))
             self.attributes[choice] += 1
 
     def step3_caste(self, rand_val):
@@ -338,6 +301,18 @@ class CharacterMaker:
             "\t Pick an extra language, plus one additional extra language for each point of foc in Linguistics\n" \
             ""
 
+    def step10_calcs_and_naming(self):
+        self.vigor = self.attributes.get('Brawn') + self.skills.get('Resistance', {}).get('exp', 0)
+        self.resolve = self.attributes.get('Willpower') + self.skills.get('Discipline', {}).get('exp', 0)
+        self.gold = self.attributes.get('Personality') + self.skills.get('Society', {}).get('exp', 0)
+        self.height = "%d'%d\"" % (self.rand_foot(arbitrary_random()), arbitrary_random(0, 11))
+        self.gender = self.select_from_choices("Select your character's gender:", ["Male", "Female"])
+        self.calc_bonus_damage()
+        pronoun = "him" if self.gender == "Male" else "her"
+        self.name = input("Enter a name for your character to save %s, or leave blank and character will be printed in "
+                          "the terminal but not saved:" % pronoun)
+        self.age = arbitrary_random(15, 40)
+
     def __str__(self):
         char_str = "\nYou are %s from the land of %s.\n" % (self.articelize(self.un_camel(self.caste)), self.homeland) + \
             "You are generally considered to be %s.\n" % (', and '.join(self.attribute_aspects)) +\
@@ -378,13 +353,14 @@ def arbitrary_random(min_val=1, max_val=20, num_vals=1, true_random=False):
     return r_val
 
 
-def gen_character(true_random=False, full_auto=False):
+def gen_character(true_random=False, full_auto=False, verbose=False):
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    table_file = os.path.join(script_dir, 'tables.dat')
+    table_file = os.path.join(script_dir, 'LifePathLibs', 'tables.dat')
+    table_store = LifePathTables()
     with open(table_file, 'rb') as table_store_in:
-        table_store = pickle.load(table_store_in)
-    char_maker = CharacterMaker(table_store, true_random=true_random, full_auto=full_auto)
-    char_maker.generate_steps_rand()
+        table_dict = pickle.load(table_store_in)
+        table_store.read_raw_table_dict(table_dict)
+    char_maker = CharacterMaker(table_store, true_random=true_random, full_auto=full_auto, verbose=verbose)
     return char_maker
 
 
@@ -398,12 +374,26 @@ def parse_args():
                         help="Enables truly random usage (from random.org). This makes the code a bit slower since the "
                              "random numbers are coming over the web, but if you want true randomness, enable it. The"
                              "default is to use psuedo-random numbers from Python.")
+    parser.add_argument('-v', "--verbose", action="store_true", default=False,
+                        help="Turn on verbose printing. when using full-auto mode, this will log automatic choices.")
+    parser.add_argument('-o', "--out-dir", type=str, default=os.path.dirname(os.path.realpath(__file__)),
+                        help="Output directory to save importable XML with generated character information.")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    print(gen_character(args.true_random, args.full_auto))
+    char = gen_character(args.true_random, args.full_auto, args.verbose)
+    if char.name:
+        sheet = CharacterSheet(char)
+        out_dir = args.out_dir
+        f_name = "FG_import_" + char.name.replace(' ', '') + '.xml'
+        save_file = os.path.join(out_dir, f_name)
+        print(save_file)
+        with open(save_file, 'w') as xml_out:
+            xml_out.write(sheet.create_fg_xml())
+    else:
+        print(char)
 
 
 if __name__ == '__main__':

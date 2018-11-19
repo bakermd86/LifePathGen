@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<root version="3.3" release="1.46|CoreRPG:4">
+	<character>
+		<abilitylist>%(abilities)s</abilitylist>
+		<abilitylist3>
+			<id-00001>
+				<shortcut type="windowreference">
+					<class>ability</class>
+					<recordname></recordname>
+				</shortcut>
+			</id-00001>
+		</abilitylist3>
+		<age type="string">%(char_age)s</age>
+		<appearance type="string">%(char_summary)s</appearance>
+		<attack_label type="string">Attacks</attack_label>
+		<attacks type="string">%(attacks)s</attacks>
+		<cas1_label type="string">Agility</cas1_label>
+		<cas1a_label type="string">Coordination</cas1a_label>
+		<cas2_label type="string">Awareness</cas2_label>
+		<cas2a_label type="string">Intelligence</cas2a_label>
+		<cas3_label type="string">Brawn/Willpower</cas3_label>
+		<cas3a_label type="string">Personality</cas3a_label>
+		%(attributes_and_skills)s<coins>
+			<slot1>
+				<amount type="number">%(gold)d</amount>
+				<name type="string">GOLD</name>
+			</slot1>
+			<slot2>
+				<amount type="number">0</amount>
+			</slot2>
+			<slot3>
+				<amount type="number">0</amount>
+			</slot3>
+			<slot4>
+				<amount type="number">0</amount>
+			</slot4>
+			<slot5>
+				<amount type="number">0</amount>
+			</slot5>
+			<slot6>
+				<amount type="number">0</amount>
+			</slot6>
+		</coins>
+		<combat_label type="string">Combat Tracker</combat_label>
+		<defence type="number">%(vigor)d</defence>
+		<encumbrance>
+			<load type="number">0</load>
+		</encumbrance>
+		<exp type="number">0</exp>
+		<expneeded type="number">0</expneeded>
+		<five type="number">%(resolve)d</five>
+		<four type="number">0</four>
+		<gender type="string">%(gender)s</gender>
+		<health type="number">0</health>
+		<height type="string">%(height)s</height>
+		<hero type="number">3</hero>
+		<initbonus type="number">0</initbonus>
+		<initresult type="number">0</initresult>
+		<inventorylist>%(equipment)s</inventorylist>
+		<languagelist>%(languages)s</languagelist>
+		<maincategorylist>
+			<id-00001>
+				<attributelist>
+				</attributelist>
+				<label type="string">Renown - %(renown)d</label>
+			</id-00001>
+			<id-00002>
+				<attributelist>
+				</attributelist>
+				<label type="string">Standing - %(standing)d</label>
+			</id-00002>
+			<id-00003>
+				<attributelist>
+				</attributelist>
+				<label type="string">Experience Gained - 0</label>
+			</id-00003>
+			<id-00004>
+				<attributelist>
+				</attributelist>
+				<label type="string">Experience Spent - 0</label>
+			</id-00004>
+			<id-00005>
+				<attributelist>
+				</attributelist>
+				<label type="string">Bonus Ranged - %(bonus_ranged)d</label>
+			</id-00005>
+			<id-00006>
+				<attributelist>
+				</attributelist>
+				<label type="string">Bonus Melee - %(bonus_melee)d</label>
+			</id-00006>
+			<id-00007>
+				<attributelist>
+				</attributelist>
+				<label type="string">Bonus Presence - %(bonus_presence)d</label>
+			</id-00007>
+			<id-00008>
+				<attributelist>
+				</attributelist>
+				<label type="string">Vigor - %(vigor)d</label>
+			</id-00008>
+			<id-00009>
+				<attributelist>
+				</attributelist>
+				<label type="string">Resolve - %(resolve)d</label>
+			</id-00009>
+		</maincategorylist>
+		<max1 type="number">0</max1>
+		<max2 type="number">0</max2>
+		<max3 type="number">0</max3>
+		<max4 type="number">0</max4>
+		<max5 type="number">0</max5>
+		<name type="string">%(name)s</name>
+		<notes type="string">%(notes)s</notes>
+		<pc_hero_points type="string">Hero Point</pc_hero_points>
+		<pc_label_defence type="string">Vigor ##</pc_label_defence>
+		<pc_label_five type="string">Resolve ##</pc_label_five>
+		<pc_label_four type="string">Courage ##</pc_label_four>
+		<pc_label_health type="string">Armor ##</pc_label_health>
+		<pc_label_order type="string">!!Do Not Use!!---&#62; XXXXXX</pc_label_order>
+		<pc_label_wounds type="string">Wounds ##</pc_label_wounds>
+		<pointsmax1 type="number">0</pointsmax1>
+		<pointsmax2 type="number">0</pointsmax2>
+		<pointsmax3 type="number">0</pointsmax3>
+		<pointsmax4 type="number">0</pointsmax4>
+		<pointsmax5 type="number">0</pointsmax5>
+		<pointsmax6 type="number">0</pointsmax6>
+		<race type="string">%(race)s</race>
+		<ref1a_label type="string">Reference</ref1a_label>
+		<ref2a_label type="string">Notes</ref2a_label>
+		<ref3_label type="string">Abilities</ref3_label>
+		<ref3a_label type="string">Images</ref3a_label>
+		<reflist1a>
+		</reflist1a>
+		<reflist2a>
+		</reflist2a>
+		<reflist3a>
+		</reflist3a>
+		<spell_slot_1 type="number">0</spell_slot_1>
+		<spell_slot_1_name type="string">Doom</spell_slot_1_name>
+		<spell_slot_2 type="number">0</spell_slot_2>
+		<spell_slot_2_name type="string">Momentum</spell_slot_2_name>
+		<spell_slot_3 type="number">0</spell_slot_3>
+		<spell_slot_3_name type="string">L1 Spell</spell_slot_3_name>
+		<spell_slot_4 type="number">0</spell_slot_4>
+		<spell_slot_4_name type="string">L2 Spell</spell_slot_4_name>
+		<spell_slot_5 type="number">0</spell_slot_5>
+		<spell_slot_5_name type="string">Trauma</spell_slot_5_name>
+		<spelllist1>
+		</spelllist1>
+		<spellpoints_label type="string">Spell Pts</spellpoints_label>
+		<spellpoints_slot_1 type="number">0</spellpoints_slot_1>
+		<spellpoints_slot_2 type="number">0</spellpoints_slot_2>
+		<spellpoints_slot_3 type="number">0</spellpoints_slot_3>
+		<spellpoints_slot_4 type="number">0</spellpoints_slot_4>
+		<spellpoints_slot_5 type="number">0</spellpoints_slot_5>
+		<spellpoints_slot_6 type="number">0</spellpoints_slot_6>
+		<spells_label type="string">Spells</spells_label>
+		<temp>
+		</temp>
+		<token type="token"></token>
+		<weight type="string">0</weight>
+		<wounds type="number">0</wounds>
+	</character>
+</root>
