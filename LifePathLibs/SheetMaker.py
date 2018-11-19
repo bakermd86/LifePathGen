@@ -63,7 +63,7 @@ class CharacterSheet:
         return attacks_temp % (2 + self.bonus_melee, 2 + self.bonus_ranged, 2 + self.bonus_presence)
 
     def read_template(self):
-        with open(join(self.script_dir, 'LifePathLibs', template_file)) as fg_template:
+        with open(join(self.script_dir, template_file)) as fg_template:
             return fg_template.read()
 
     def create_fg_xml(self):
