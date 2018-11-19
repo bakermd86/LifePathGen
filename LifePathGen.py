@@ -107,9 +107,9 @@ class CharacterMaker:
             self.auto_print("Automatically selecting %s from choices: %s" % (auto_choice, ', '.join(choices)))
             return auto_choice
         else:
-            nums = [str(n +1) for n in range(len(choices))]
+            nums = [str(n + 1) for n in range(len(choices))]
             vals = {n: choice for n, choice in zip(nums, choices)}
-            select_vals = ['[%s]: %s' % (n, choice) for n, choice in vals.items()]
+            select_vals = sorted(['[%s]: %s' % (n, choice) for n, choice in vals.items()])
             input_prompt = '%s\n%s\nYour choice: ' % (prompt, '\n'.join(select_vals))
             selected = input(input_prompt)
             while selected not in choices + nums:
