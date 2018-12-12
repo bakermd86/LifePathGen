@@ -356,7 +356,7 @@ class CharacterMaker:
                 self.attributes[upg_key] += 1
                 print("Spent %d xp to raise the value of the %s attribute by 1 point" % (upg_cost, upg_key))
             elif upg_type == 'talents':
-                self.talents[upg_key.name] = upg_key
+                self.talents[upg_key.name] = upg_key.description
                 print("Spent %d xp to purchase the talent %s" % (upg_cost, upg_key))
             elif 'exp' in upg_type:
                 self.skills[upg_key]['exp'] += 1

@@ -185,5 +185,4 @@ def import_talents() -> FlatNameDict:
     script_dir = os.path.dirname(os.path.realpath(__file__))
     talent_file = os.path.join(script_dir, 'talent_tree.dat')
     with open(talent_file, 'rb') as talent_store_in:
-        # return FlatNameDict(pickle.load(talent_store_in))
-        return pickle.load(talent_store_in)
+        return FlatNameDict(pickle.load(talent_store_in))
