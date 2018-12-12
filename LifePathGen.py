@@ -4,7 +4,7 @@ import urllib.request
 import random
 from collections import defaultdict
 import argparse
-from LifePathLibs import CharacterSheet
+from LifePathLibs import CharacterSheet, Talent
 from LifePathLibs import LifePathTables, MinValDict
 
 # Needs 3 formatted int values: number to generate, min value, max value. 13, 1, 20 for 13d20
@@ -13,11 +13,12 @@ attribute_names = ['Agility', 'Awareness', 'Brawn', 'Coordination', 'Intelligenc
 
 
 class CharacterMaker:
-    def __init__(self, table_store: LifePathTables, true_random=False, full_auto=False, verbose=False):
+    def __init__(self, table_store: LifePathTables, true_random=False, full_auto=False, verbose=False, xp:int=0):
         self.table_store = table_store
         self.true_random = true_random
         self.full_auto = full_auto
         self.verbose = verbose
+        self.xp = xp
 
         self.homeland = ''
         self.caste = ''
@@ -43,7 +44,7 @@ class CharacterMaker:
         self.career_skill = ''
         self.ex_random_skill = ''
         self.finishing_touches =''
-        self.talents = []
+        self.talents = {}
         self.equipment = []
         self.attributes = {att: 7 for att in attribute_names}
         self.skills = defaultdict(lambda: {'exp': 0, 'foc': 0})
@@ -99,6 +100,32 @@ class CharacterMaker:
             return ''
         return "an %s" % text if text[0].lower() in ('a', 'e', 'i', 'o', 'u') else "a %s" % text
 
+    def skill_cost(self, skill):
+        return {'exp': (200 * (skill['exp'] + 1)), 'foc': (200 * (skill['foc'] + 1))}
+
+    def att_cost(self, attribute_level):
+        return 100 * (attribute_level + 1)
+
+    def allowed_talents(self):
+        return list(filter(lambda t: t.is_allowed(self.talents, self.skills), self.table_store.talents.values()))
+
+    def affordable_purchases(self):
+        affordable_talents = {t: t.cost(self.skills) for t in self.allowed_talents() if t.cost(self.skills) <= self.xp}
+        next_skill_costs = {n: self.skill_cost(s) for (n, s) in self.skills.items()}
+        affordable_skill_exps = {n: v['exp'] for (n, v) in next_skill_costs.items() if v['exp'] <= self.xp}
+        affordable_skill_focs = {n: v['foc'] for (n, v) in next_skill_costs.items() if v['foc'] <= self.xp}
+        affordable_attributes = {n: self.att_cost(v) for (n, v) in self.attributes.items() if self.att_cost(v) <= self.xp}
+        all_affordable = {}
+        if affordable_talents:
+            all_affordable['talents'] = affordable_talents
+        if affordable_skill_exps:
+            all_affordable['skill_exp'] = affordable_skill_exps
+        if affordable_skill_focs:
+            all_affordable['skill_foc'] = affordable_skill_focs
+        if affordable_attributes:
+            all_affordable['attributes'] = affordable_attributes
+        return all_affordable
+
     def select_from_choices(self, prompt, choices: list):
         if not isinstance(choices, list):
             choices = list(choices)
@@ -131,6 +158,7 @@ class CharacterMaker:
         self.step8_war_story(rand_vals.pop())
         self.step9_finishing_touches(rand_vals)
         self.step10_calcs_and_naming()
+        self.step11_randomize_xp()
 
     def add_skill(self, skill: str, exp: int, foc: int):
         if 'character’s career skill' in skill:
@@ -159,7 +187,7 @@ class CharacterMaker:
         talent_src_skills = []
         if 'careertalent' in values:
             talent, page = values['careertalent'].split('(')
-            self.talents.append('%s: %s' % (talent.strip(), page.strip().replace(')', '')))
+            self.talents[talent.strip()] = page.strip().replace(')', '')
         if 'careerskill' in values:
             self.career_skill = values['careerskill'].split('in the ')[1].replace(' skill', '')
             self.add_skill(self.career_skill, 2, 2)  # Career skill is +2/+2
@@ -179,11 +207,16 @@ class CharacterMaker:
                 self.add_skill(skill_elect, 1, 1)
                 elective_skills.remove(skill_elect)
         if 'talent' in values:
-            talent_choices = [s.replace("your character’s career skill", self.career_skill)
-                               .replace("a random career skill (roll on Archetype table)", self.ex_random_skill)
-                              for s in talent_src_skills]
-            self.talents.append("Any one talent associated with one of the following skills: %s" %
-                                ', '.join(list(set(talent_choices))))
+            skill_choices = [s.replace("your character’s career skill", self.career_skill)
+                             .replace("a random career skill (roll on Archetype table)", self.ex_random_skill)
+                             for s in talent_src_skills]
+            talent_choices = {v.name: v for (k, v) in self.table_store.talents.items() if v.is_allowed(self.talents, self.skills)
+                              and v.matches_skills(skill_choices)}
+            talent_names = list(set(talent_choices.keys()))
+            selected_talent = self.select_from_choices(
+                "Choose any one talent associated with one of the following skills:\n%s" %
+                ', '.join(talent_names), talent_names)
+            self.talents[selected_talent] = talent_choices[selected_talent].description
         if 'equipment' in values:
             self.equipment += values['equipment'].split('\n')
         if 'attributeimprovement' in values:
@@ -201,7 +234,7 @@ class CharacterMaker:
         # Homeland, Talent, Languages
         homeland_info = self.clean_step(self.table_store.homelands.get(rand_val))
         self.homeland = homeland_info[0]
-        self.talents.append('%s: %s' % (homeland_info[1], self.table_store.homelands_talents.get(homeland_info[1])))
+        self.talents[homeland_info[1]] = self.table_store.homelands_talents.get(homeland_info[1])
         self.languages.append(homeland_info[2])
 
     def step2_attributes(self, rand_vals):
@@ -247,7 +280,7 @@ class CharacterMaker:
         self.caste = caste_info[0]
         self.caste_description = self.table_store.castes_descriptions.get(self.caste)
         for talent in caste_info[1].split(','):
-            self.talents.append('%s: %s' % (talent, self.table_store.castes_talents.get(talent)))
+            self.talents[talent] = self.table_store.castes_talents.get(talent)
         self.add_skill(caste_info[2], 1, 1)
         self.standing += int(caste_info[3])
 
@@ -313,6 +346,27 @@ class CharacterMaker:
                           "the terminal but not saved:" % pronoun)
         self.age = arbitrary_random(15, 40)
 
+    def step11_randomize_xp(self):
+        all_affordable = self.affordable_purchases()
+        while all_affordable:
+            upg_type = random.sample(list(all_affordable), 1)[0]
+            upg_key = random.sample(all_affordable[upg_type].keys(), 1)[0]
+            upg_cost = all_affordable[upg_type][upg_key]
+            if upg_type == 'attributes':
+                self.attributes[upg_key] += 1
+                print("Spent %d xp to raise the value of the %s attribute by 1 point" % (upg_cost, upg_key))
+            elif upg_type == 'talents':
+                self.talents[upg_key.name] = upg_key
+                print("Spent %d xp to purchase the talent %s" % (upg_cost, upg_key))
+            elif 'exp' in upg_type:
+                self.skills[upg_key]['exp'] += 1
+                print("Spent %d xp to raise exp in the %s skill by 1 point" % (upg_cost, upg_key))
+            elif 'foc' in upg_type:
+                self.skills[upg_key]['foc'] += 1
+                print("Spent %d xp to raise foc in the %s skill by 1 point" % (upg_cost, upg_key))
+            self.xp -= upg_cost
+            all_affordable = self.affordable_purchases()
+
     def __str__(self):
         char_str = "\nYou are %s from the land of %s.\n" % (self.articelize(self.un_camel(self.caste)), self.homeland) + \
             "You are generally considered to be %s.\n" % (', and '.join(self.attribute_aspects)) +\
@@ -330,11 +384,12 @@ class CharacterMaker:
             "Languages Spoken:\n\t%s\n" % ','.join(self.languages) +\
             "Social Standing:\n\t%d\n" % self.standing +\
             "Attributes:\n\t%s\n" % '\n\t'.join(["%s - %s" % (k, v) for (k, v) in self.attributes.items()]) +\
-            "Talents:\n\t%s\n" % '\n\t'.join(self.talents) +\
+            "Talents:\n\t%s\n" % '\n\t'.join(["%s: %s" % (k, v) for k, v in self.talents.items()]) +\
             "Skills:\n\t%s\n" % '\n\t'.join(['%s: %s' % (k, '%d EXP/%d FOC' % (v['exp'], v['foc']))
                                              for (k, v) in self.skills.items()]) +\
             "Equipment:\n\t%s\n" % '\n\t'.join(self.equipment) +\
             "\n--------------------------------\n%s" % self.finishing_touches
+        # return ''
         return char_str
 
 
@@ -353,14 +408,14 @@ def arbitrary_random(min_val=1, max_val=20, num_vals=1, true_random=False):
     return r_val
 
 
-def gen_character(true_random=False, full_auto=False, verbose=False):
+def gen_character(true_random=False, full_auto=False, verbose=False, xp:int=0):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     table_file = os.path.join(script_dir, 'LifePathLibs', 'tables.dat')
     table_store = LifePathTables()
     with open(table_file, 'rb') as table_store_in:
         table_dict = pickle.load(table_store_in)
         table_store.read_raw_table_dict(table_dict)
-    char_maker = CharacterMaker(table_store, true_random=true_random, full_auto=full_auto, verbose=verbose)
+    char_maker = CharacterMaker(table_store, true_random=true_random, full_auto=full_auto, verbose=verbose, xp=xp)
     return char_maker
 
 
@@ -378,12 +433,15 @@ def parse_args():
                         help="Turn on verbose printing. when using full-auto mode, this will log automatic choices.")
     parser.add_argument('-o', "--out-dir", type=str, default=os.path.dirname(os.path.realpath(__file__)),
                         help="Output directory to save importable XML with generated character information.")
+    parser.add_argument('-x', "--xp", type=int, default=0,
+                        help="Specify a value of XP to randomly spend on skill, talent and attribute upgrades "
+                             "for your character")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    char = gen_character(args.true_random, args.full_auto, args.verbose)
+    char = gen_character(args.true_random, args.full_auto, args.verbose, args.xp)
     if char.name:
         sheet = CharacterSheet(char)
         out_dir = args.out_dir
