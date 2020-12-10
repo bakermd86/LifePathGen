@@ -105,9 +105,16 @@ class CharacterSheet:
     def parse_abilities(self):
         abilities = ''
         i = 1
-        for ability in self.talents:
-            ability_fmt = {'ability_num': '%05d' % i}
-            ability_fmt['ability_name'], ability_fmt['ability_text'] = ability.split(': ')
+        # print(self.talents)
+        for ability_name, ability_text in self.talents.items():
+            # print(ability)
+            ability_fmt = {
+                'ability_num': '%05d' % i,
+                "ability_name": ability_name,
+                "ability_text": ability_text
+            }
+            # ability_fmt['ability_name'] = ability_name
+            # ability_fmt['ability_text'] = ability_text
             abilities += ability_temp % ability_fmt
             i += 1
         return abilities
