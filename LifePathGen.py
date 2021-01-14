@@ -49,6 +49,8 @@ class CharacterMaker:
         self.attributes = {att: 7 for att in attribute_names}
         self.skills = defaultdict(lambda: {'exp': 0, 'foc': 0})
         self.languages = []
+        self.xp_spent = 0
+        self.xp_spends = []
         self.standing = 0
 
         self.name = ''
@@ -352,19 +354,22 @@ class CharacterMaker:
             upg_type = random.sample(list(all_affordable), 1)[0]
             upg_key = random.sample(all_affordable[upg_type].keys(), 1)[0]
             upg_cost = all_affordable[upg_type][upg_key]
+            level_str = ''
             if upg_type == 'attributes':
                 self.attributes[upg_key] += 1
-                print("Spent %d xp to raise the value of the %s attribute by 1 point" % (upg_cost, upg_key))
+                level_str = "Spent %d xp to raise the value of the %s attribute by 1 point" % (upg_cost, upg_key)
             elif upg_type == 'talents':
                 self.talents[upg_key.name] = upg_key.description
-                print("Spent %d xp to purchase the talent %s" % (upg_cost, upg_key))
+                level_str = "Spent %d xp to purchase the talent %s" % (upg_cost, upg_key)
             elif 'exp' in upg_type:
                 self.skills[upg_key]['exp'] += 1
-                print("Spent %d xp to raise exp in the %s skill by 1 point" % (upg_cost, upg_key))
+                level_str = "Spent %d xp to raise exp in the %s skill by 1 point" % (upg_cost, upg_key)
             elif 'foc' in upg_type:
                 self.skills[upg_key]['foc'] += 1
-                print("Spent %d xp to raise foc in the %s skill by 1 point" % (upg_cost, upg_key))
+                level_str = "Spent %d xp to raise foc in the %s skill by 1 point" % (upg_cost, upg_key)
             self.xp -= upg_cost
+            self.xp_spent += upg_cost
+            self.xp_spends.append(level_str)
             all_affordable = self.affordable_purchases()
 
     def __str__(self):
@@ -388,8 +393,9 @@ class CharacterMaker:
             "Skills:\n\t%s\n" % '\n\t'.join(['%s: %s' % (k, '%d EXP/%d FOC' % (v['exp'], v['foc']))
                                              for (k, v) in self.skills.items()]) +\
             "Equipment:\n\t%s\n" % '\n\t'.join(self.equipment) +\
-            "\n--------------------------------\n%s" % self.finishing_touches
-        # return ''
+            "\n--------------------------------\n%s" % self.finishing_touches +\
+            "\nExperience Points: %d/%d" % (self.xp_spent, self.xp_spent+self.xp) +\
+            "\n------------Level Ups-------------\n%s" % '\n'.join(self.xp_spends)
         return char_str
 
 

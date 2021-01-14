@@ -56,6 +56,8 @@ class CharacterSheet:
         self.gold = char.gold
         self.gender = char.gender
         self.height = char.height
+        self.xp = char.xp + char.xp_spent
+        self.xp_spent = char.xp_spent
 
         self.notes = str(char)
 
@@ -81,6 +83,7 @@ class CharacterSheet:
                     'attributes_and_skills': self.parse_attributes_and_skills(),
                     'equipment': self.parse_equipment(),
                     'languages': self.parse_langauges(),
+                    'xp': self.xp, 'xp_spent': self.xp_spent
                     }
         return fmt_dict
 

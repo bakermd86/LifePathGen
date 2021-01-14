@@ -72,12 +72,12 @@
 			<id-00003>
 				<attributelist>
 				</attributelist>
-				<label type="string">Experience Gained - 0</label>
+				<label type="string">Experience Gained - %(xp)d</label>
 			</id-00003>
 			<id-00004>
 				<attributelist>
 				</attributelist>
-				<label type="string">Experience Spent - 0</label>
+				<label type="string">Experience Spent - %(xp_spent)d</label>
 			</id-00004>
 			<id-00005>
 				<attributelist>
